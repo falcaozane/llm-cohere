@@ -1,5 +1,5 @@
 import { StreamingTextResponse, LangChainStream, Message } from 'ai';
-import { ChatVertexAI } from "@langchain/google-vertexai";
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { AIMessage, HumanMessage } from '@langchain/core/messages';
 
 export const runtime = 'edge';
@@ -30,21 +30,19 @@ export async function POST(req: Request) {
 
   const { stream, handlers } = LangChainStream();
 
-  const llm = new ChatVertexAI({
-    model: "gemini-1.5-pro",
-    temperature: 0
+  const llm = new ChatGoogleGenerativeAI({
+    modelName: "gemini-pro",
+    streaming: true,
   });
 
+  const chainedMessages = (messages as Message[]).map(m =>
+    m.role === 'user'
+      ? new HumanMessage(m.content)
+      : new AIMessage(m.content)
+  );
+
   llm
-    .call(
-      (messages as Message[]).map(m =>
-        m.role == 'user'
-          ? new HumanMessage(m.content)
-          : new AIMessage(m.content),
-      ),
-      {},
-      [handlers],
-    )
+    .invoke(chainedMessages, { callbacks: [handlers] })
     .catch(console.error);
 
   return new StreamingTextResponse(stream);

@@ -1,6 +1,6 @@
 import { MongoClient } from "mongodb";
 
-const uri = process.env.MONGODB_ATLAS_URI as string; // your mongodb connection string
+const uri = "mongodb+srv://admin:admin@cluster0.54ttjgq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"; // your mongodb connection string
 const options = {};
 
 let client;

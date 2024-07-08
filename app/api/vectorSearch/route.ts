@@ -1,18 +1,21 @@
-import { GoogleVertexAIEmbeddings } from "@langchain/community/embeddings/googlevertexai";
+import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { MongoDBAtlasVectorSearch } from "@langchain/mongodb";
 import mongoClientPromise from '@/app/lib/mongodb';
+import { TaskType } from "@google/generative-ai";
 
 export async function POST(req: Request) {
   const client = await mongoClientPromise;
   const dbName = "docs";
   const collectionName = "embeddings";
   const collection = client.db(dbName).collection(collectionName);
-  
+
   const question = await req.text();
 
   const vectorStore = new MongoDBAtlasVectorSearch(
-    new GoogleVertexAIEmbeddings(), 
-    {
+    new GoogleGenerativeAIEmbeddings({
+      model: "embedding-001", // 768 dimensions
+      taskType: TaskType.RETRIEVAL_DOCUMENT
+    }), {
     collection,
     indexName: "default",
     textKey: "text", 
@@ -26,8 +29,11 @@ export async function POST(req: Request) {
       lambda: 0.1,
     },
   });
-  
-  const retrieverOutput = await retriever.getRelevantDocuments(question);
-  
-  return Response.json(retrieverOutput);
+
+  // Use .invoke() instead of .getRelevantDocuments()
+  const retrieverOutput = await retriever.invoke(question);
+
+  return new Response(JSON.stringify(retrieverOutput), {
+    headers: { 'Content-Type': 'application/json' }
+  });
 }

@@ -12,6 +12,8 @@
   "dependencies": {
     "@google/generative-ai": "^0.14.1",
     "@langchain/community": "^0.2.17",
+    "@langchain/core": "^0.2.14",
+    "@langchain/google-genai": "^0.0.21",
     "@langchain/google-vertexai": "^0.0.19",
     "@langchain/mongodb": "^0.0.4",
     "ai": "2.2.14",
