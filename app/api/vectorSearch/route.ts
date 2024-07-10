@@ -15,20 +15,15 @@ export async function POST(req: NextRequest) {
     const collection = client.db(dbName).collection(collectionName);
     console.log(`Using database: ${dbName}, collection: ${collectionName}`);
 
-    // Diagnostic: Check collection content
-    const docCount = await collection.countDocuments();
-    console.log("Total number of documents in collection:", docCount);
-
-    if (docCount > 0) {
-      const sampleDoc = await collection.findOne({});
-      console.log("Sample document:", JSON.stringify(sampleDoc, null, 2));
-    } else {
-      console.log("The collection is empty.");
-    }
-
-    // Check if the vector index exists
+    // Check if the text index exists and create it if not
     const indexes = await collection.listIndexes().toArray();
-    console.log("Indexes:", JSON.stringify(indexes, null, 2));
+    const textIndexExists = indexes.some((index: any) => index.key && index.key.text === "text");
+
+    if (!textIndexExists) {
+      console.log("Creating text index on 'text' field...");
+      await collection.createIndex({ text: "text" });
+      console.log("Text index created.");
+    }
 
     let question: string;
     const contentType = req.headers.get("content-type");
@@ -46,16 +41,6 @@ export async function POST(req: NextRequest) {
     }
 
     console.log("Received question:", question);
-
-    console.log("Initializing vector store with config:", {
-      apiKey: process.env.GOOGLE_API_KEY ? "Set" : "Not set",
-      model: "embedding-001",
-      taskType: TaskType.RETRIEVAL_DOCUMENT,
-      collectionName: collectionName,
-      indexName: "default",
-      textKey: "text",
-      embeddingKey: "embedding"
-    });
 
     const vectorStore = new MongoDBAtlasVectorSearch(
       new GoogleGenerativeAIEmbeddings({
@@ -89,21 +74,22 @@ export async function POST(req: NextRequest) {
     }));
 
     console.log("Formatted output:", JSON.stringify(formattedOutput, null, 2));
-    // Perform a simple text search to check if documents exist
-const textSearchResult = await collection.findOne({ $text: { $search: question } });
-console.log("Text search result:", JSON.stringify(textSearchResult, null, 2));
 
-// Check the embedding
-try {
-  const embedding = await new GoogleGenerativeAIEmbeddings({
-    apiKey: process.env.GOOGLE_AP_KEY,
-    model: "embedding-001",
-    taskType: TaskType.RETRIEVAL_DOCUMENT
-  }).embedQuery(question);
-  console.log("Embedding generated successfully. First 5 values:", embedding.slice(0, 5));
-} catch (error) {
-  console.error("Error generating embedding:", error);
-}
+    // Perform a simple text search to check if documents exist
+    const textSearchResult = await collection.findOne({ $text: { $search: question } });
+    console.log("Text search result:", JSON.stringify(textSearchResult, null, 2));
+
+    // Check the embedding
+    try {
+      const embedding = await new GoogleGenerativeAIEmbeddings({
+        apiKey: process.env.GOOGLE_API_KEY,
+        model: "embedding-001",
+        taskType: TaskType.RETRIEVAL_DOCUMENT
+      }).embedQuery(question);
+      console.log("Embedding generated successfully. First 5 values:", embedding.slice(0, 5));
+    } catch (error) {
+      console.error("Error generating embedding:", error);
+    }
 
     return NextResponse.json({ results: formattedOutput });
   } catch (error: unknown) {
