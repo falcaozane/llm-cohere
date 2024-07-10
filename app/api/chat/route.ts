@@ -8,25 +8,42 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
   const currentMessageContent = messages[messages.length - 1].content;
 
+  console.log("Sending request to vectorSearch API");
   const vectorSearch = await fetch("http://localhost:3000/api/vectorSearch", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: currentMessageContent,
+    body: JSON.stringify({ question: currentMessageContent }),
   }).then((res) => res.json());
+  console.log("Received response from vectorSearch API:", vectorSearch);
 
-  const TEMPLATE = `You are a very enthusiastic freeCodeCamp.org representative who loves to help people! Given the following sections from the freeCodeCamp.org contributor documentation, answer the question using only that information, outputted in markdown format. If you are unsure and the answer is not explicitly written in the documentation, say "Sorry, I don't know how to help with that."
-  
-  Context sections:
-  ${JSON.stringify(vectorSearch)}
+  const contextSections = vectorSearch.results ? vectorSearch.results.map((result: any) => result.text).join('\n\n') : '';
 
-  Question: """
-  ${currentMessageContent}
-  """
-  `;
+  console.log("Context sections:", contextSections);
 
-  messages[messages.length -1].content = TEMPLATE;
+  let TEMPLATE;
+
+  if (contextSections) {
+    TEMPLATE = `You are a very enthusiastic freeCodeCamp.org representative who loves to help people! Given the following sections from the freeCodeCamp.org contributor documentation, answer the question using only that information, outputted in markdown format. If you are unsure and the answer is not explicitly written in the documentation, say "Sorry, I don't know how to help with that."
+
+    Context sections:
+    ${contextSections}
+
+    Question: """
+    ${currentMessageContent}
+    """
+    `;
+  } else {
+    TEMPLATE = `You are a very enthusiastic freeCodeCamp.org representative who loves to help people! Please answer the following question to the best of your ability, outputted in markdown format:
+
+    Question: """
+    ${currentMessageContent}
+    """
+    `;
+  }
+
+  messages[messages.length - 1].content = TEMPLATE;
 
   const { stream, handlers } = LangChainStream();
 
