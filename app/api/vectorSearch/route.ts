@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     console.log("Formatted output:", JSON.stringify(formattedOutput, null, 2));
 
     // Perform a simple text search to check if documents exist
-    const textSearchResult = await collection.findOne({ $text: { $search: question } });
+    const textSearchResult = await collection.findMany({ $text: { $search: question } });
     console.log("Text search result:", JSON.stringify(textSearchResult, null, 2));
 
     // Check the embedding
