@@ -1,0 +1,16 @@
+{
+  "mappings": {
+    "dynamic": true,
+    "fields": {
+      "embedding": {
+        "dimensions": 1024,
+        "similarity": "cosine",
+        "type": "knnVector"
+      }
+    }
+  }
+}
+
+
+
+i have a next js app using app router in whih the data is already present in mongo db atlas. Now using cohere fetch the data from mongo db atlas
