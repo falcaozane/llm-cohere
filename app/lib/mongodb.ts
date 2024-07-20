@@ -1,33 +1,28 @@
-import { MongoClient } from "mongodb";
+import { MongoClient } from 'mongodb';
 
-const uri = "mongodb+srv://admin:admin@cluster0.54ttjgq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"; // your mongodb connection string
+const uri = process.env.MONGODB_ATLAS_URI!;
 const options = {};
 
-let client;
-let mongoClientPromise: Promise<any>;
+let client: MongoClient;
+let clientPromise: Promise<MongoClient>;
 
 declare global {
-  var _mongoClientPromise: Promise<any>;
+  var _mongoClientPromise: Promise<MongoClient>;
 }
 
 if (!uri) {
-  throw new Error("Please add your Mongo URI to .env.local");
+  throw new Error('Please add your Mongo URI to .env.local');
 }
 
-if (process.env.NODE_ENV === "development") {
-  // In development mode, use a global variable so that the value
-  // is preserved across module reloads caused by HMR (Hot Module Replacement).
+if (process.env.NODE_ENV === 'development') {
   if (!global._mongoClientPromise) {
     client = new MongoClient(uri, options);
     global._mongoClientPromise = client.connect();
   }
-  mongoClientPromise = global._mongoClientPromise;
+  clientPromise = global._mongoClientPromise;
 } else {
-  // In production mode, it's best to not use a global variable.
   client = new MongoClient(uri, options);
-  mongoClientPromise = client.connect();
+  clientPromise = client.connect();
 }
 
-// Export a module-scoped MongoClient promise. By doing this in a
-// separate module, the client can be shared across functions.
-export default mongoClientPromise;
+export default clientPromise;

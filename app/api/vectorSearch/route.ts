@@ -3,7 +3,7 @@ import { CohereEmbeddings } from "@langchain/cohere";
 import clientPromise from '@/app/lib/mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     } else {
       question = await req.text();
     }
-
+            
     if (!question) {
       console.log("No question provided");
       return NextResponse.json({ error: 'Question is required' }, { status: 400 });
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
         model: "embed-english-v3.0",
       }),
       {
-        collection,
+        collection: collection as any, // Cast to any if type issues persist
         indexName: "default", // The name of the Atlas search index. Defaults to "default"
         textKey: "text", // The name of the collection field containing the raw content. Defaults to "text"
         embeddingKey: "embedding", // The name of the collection field containing the embedded text. Defaults to "embedding"
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 
     // Return the search results as JSON response
     return NextResponse.json({ results: formattedOutput });
-  } catch (error: unknown) {
+   } catch (error: unknown) {
     console.error('Error:', error);
     if (error instanceof Error) {
       return NextResponse.json({ error: 'An error occurred during the search', details: error.message }, { status: 500 });
